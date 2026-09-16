@@ -1,0 +1,39 @@
+# PROG5121 POE - Part 1: Registration and Login
+
+## Overview
+A console-based Java application implementing user registration and login
+with input validation, built for the PROG5121 Portfolio of Evidence.
+
+## Features
+- **Username validation**: must contain an underscore and be no more than
+  five characters long.
+- **Password validation**: must be at least eight characters long and
+  contain a capital letter, a number, and a special character.
+- **Cell number validation**: must contain the South African international
+  code (+27) followed by the number.
+- **Login verification**: checks entered credentials against the
+  registered account and returns a personalised welcome message.
+
+## Classes
+- `Login.java` — contains all validation logic and registration/login
+  methods (`checkUserName`, `checkPasswordComplexity`,
+  `checkCellPhoneNumber`, `registerUser`, `loginUser`,
+  `returnLoginStatus`).
+- `PoePartOne.java` — console entry point that collects user input via
+  `Scanner` and drives registration and login.
+- `LoginTest.java` — JUnit test suite covering all validation and
+  messaging logic using the exact test data supplied in the brief.
+
+## How to run
+1. Open the project in NetBeans.
+2. Run `PoePartOne.java` to start the console application.
+3. Run `LoginTest.java` (Test File) to execute the JUnit test suite.
+
+## Testing
+All 13 unit tests pass, covering:
+- Username format (valid/invalid)
+- Password complexity (valid/invalid)
+- Cell number format (valid/invalid)
+- Registration failure messages
+- Login success/failure
+- Returned status messages 
