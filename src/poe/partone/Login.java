@@ -34,6 +34,15 @@ public class Login {
     // South African cell number: '+27' international code followed by 9 digits.
     private static final Pattern CELL_NUMBER = Pattern.compile("^\\+27\\d{9}$");
 
+    // Registration failure messages, extracted here so they aren't repeated
+    // inline in registerUser().
+    private static final String USERNAME_ERROR =
+            "Username is not correctly formatted; please ensure that your username contains an underscore and is no more than five characters in length.";
+    private static final String PASSWORD_ERROR =
+            "Password is not correctly formatted; please ensure that the password contains at least eight characters, a capital letter, a number, and a special character.";
+    private static final String CELLNUMBER_ERROR =
+            "Cell number is incorrectly formatted or does not contain an international code; please correct the number and try again.";
+
     /**
      * Checks that the username contains an underscore and is no more than
      * five characters long.
@@ -97,15 +106,15 @@ public class Login {
                                 String firstName, String lastName) {
 
         if (!checkUserName(username)) {
-            return "Username is not correctly formatted; please ensure that your username contains an underscore and is no more than five characters in length.";
+            return USERNAME_ERROR;
         }
 
         if (!checkPasswordComplexity(password)) {
-            return "Password is not correctly formatted; please ensure that the password contains at least eight characters, a capital letter, a number, and a special character.";
+            return PASSWORD_ERROR;
         }
 
         if (!checkCellPhoneNumber(cellNumber)) {
-            return "Cell number is incorrectly formatted or does not contain an international code; please correct the number and try again.";
+            return CELLNUMBER_ERROR;
         }
 
         this.storedUsername = username;
