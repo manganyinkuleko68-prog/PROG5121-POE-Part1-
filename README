@@ -36,4 +36,9 @@ All 13 unit tests pass, covering:
 - Cell number format (valid/invalid)
 - Registration failure messages
 - Login success/failure
-- Returned status messages 
+- Returned status messages
+
+## Recent Changes
+- Refactored `Login.java` to extract registration error messages into named constants, reducing duplication in `registerUser`.
+- Refactored `PoePartOne.java` to use a `promptFor` helper method for reading console input, removing repeated `System.out.println` + `scanner.nextLine()` pairs.
+- Added a `.gitignore` to keep NetBeans build artifacts out of version control.

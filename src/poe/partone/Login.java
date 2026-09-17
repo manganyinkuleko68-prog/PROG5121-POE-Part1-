@@ -7,11 +7,11 @@ import java.util.regex.Pattern;
  *
  * Handles user registration and login validation for Part 1 of the PoE.
  *
- * Regex resources consulted while building the validation patterns:
- * - Password complexity pattern adapted from discussion on Stack Overflow:
- *   https://stackoverflow.com/questions/19605150/regex-for-password-must-contain-at-least-eight-characters-at-least-one-number
+ * Regex resources consulted while building the validation patterns: - Password
+ * complexity pattern adapted from discussion on Stack Overflow:
+ * https://stackoverflow.com/questions/19605150/regex-for-password-must-contain-at-least-eight-characters-at-least-one-number
  * - South African cell number / international code pattern adapted from:
- *   https://stackoverflow.com/questions/29467750/regex-for-south-african-mobile-numbers
+ * https://stackoverflow.com/questions/29467750/regex-for-south-african-mobile-numbers
  *
  * @author Student
  */
@@ -36,16 +36,16 @@ public class Login {
 
     // Registration failure messages, extracted here so they aren't repeated
     // inline in registerUser().
-    private static final String USERNAME_ERROR =
-            "Username is not correctly formatted; please ensure that your username contains an underscore and is no more than five characters in length.";
-    private static final String PASSWORD_ERROR =
-            "Password is not correctly formatted; please ensure that the password contains at least eight characters, a capital letter, a number, and a special character.";
-    private static final String CELLNUMBER_ERROR =
-            "Cell number is incorrectly formatted or does not contain an international code; please correct the number and try again.";
+    private static final String USERNAME_ERROR
+            = "Username is not correctly formatted; please ensure that your username contains an underscore and is no more than five characters in length.";
+    private static final String PASSWORD_ERROR
+            = "Password is not correctly formatted; please ensure that the password contains at least eight characters, a capital letter, a number, and a special character.";
+    private static final String CELLNUMBER_ERROR
+            = "Cell number is incorrectly formatted or does not contain an international code; please correct the number and try again.";
 
     /**
-     * Checks that the username contains an underscore and is no more than
-     * five characters long.
+     * Checks that the username contains an underscore and is no more than five
+     * characters long.
      *
      * @param username the username string to validate
      * @return true if the username is correctly formatted, false otherwise
@@ -58,12 +58,12 @@ public class Login {
     }
 
     /**
-     * Checks that the password is at least eight characters long and
-     * contains a capital letter, a number, and a special character.
+     * Checks that the password is at least eight characters long and contains a
+     * capital letter, a number, and a special character.
      *
      * @param password the password string to validate
-     * @return true if the password meets all complexity requirements,
-     *         false otherwise
+     * @return true if the password meets all complexity requirements, false
+     * otherwise
      */
     public boolean checkPasswordComplexity(String password) {
         if (password == null) {
@@ -76,12 +76,11 @@ public class Login {
     }
 
     /**
-     * Checks that the cell number contains the South African international
-     * code (+27) followed by the number.
+     * Checks that the cell number contains the South African international code
+     * (+27) followed by the number.
      *
      * @param cellNumber the cell number string to validate
-     * @return true if the cell number is correctly formatted,
-     *         false otherwise
+     * @return true if the cell number is correctly formatted, false otherwise
      */
     public boolean checkCellPhoneNumber(String cellNumber) {
         if (cellNumber == null) {
@@ -91,8 +90,8 @@ public class Login {
     }
 
     /**
-     * Registers a user, validating the username, password, and cell number
-     * in turn. Stores the user's details if all checks pass.
+     * Registers a user, validating the username, password, and cell number in
+     * turn. Stores the user's details if all checks pass.
      *
      * @param username the desired username
      * @param password the desired password
@@ -100,10 +99,10 @@ public class Login {
      * @param firstName the user's first name
      * @param lastName the user's last name
      * @return a message indicating which validation failed, or a success
-     *         message if registration succeeded
+     * message if registration succeeded
      */
     public String registerUser(String username, String password, String cellNumber,
-                                String firstName, String lastName) {
+            String firstName, String lastName) {
 
         if (!checkUserName(username)) {
             return USERNAME_ERROR;
@@ -128,13 +127,13 @@ public class Login {
     }
 
     /**
-     * Verifies that the entered login details match the stored details
-     * from registration.
+     * Verifies that the entered login details match the stored details from
+     * registration.
      *
      * @param username the entered username
      * @param password the entered password
-     * @return true if the credentials match the registered account,
-     *         false otherwise
+     * @return true if the credentials match the registered account, false
+     * otherwise
      */
     public boolean loginUser(String username, String password) {
         if (!isRegistered) {
@@ -147,8 +146,7 @@ public class Login {
      * Returns the appropriate login status message.
      *
      * @param loginSuccessful whether the login attempt succeeded
-     * @return a welcome message if successful, or a failure message
-     *         otherwise
+     * @return a welcome message if successful, or a failure message otherwise
      */
     public String returnLoginStatus(boolean loginSuccessful) {
         if (loginSuccessful) {
