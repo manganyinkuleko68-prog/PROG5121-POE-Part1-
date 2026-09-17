@@ -66,4 +66,4 @@ public class PoePartOne {
 
         scanner.close();
     }
-}
+} 

@@ -1,0 +1,6 @@
+build/
+dist/
+nbproject/private/
+*.class
+*.log
+.netbeans_automatic_build
