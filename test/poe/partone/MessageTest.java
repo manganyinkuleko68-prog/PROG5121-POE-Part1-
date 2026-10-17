@@ -167,4 +167,58 @@ public class MessageTest {
         assertTrue(json.contains("\"recipient\": \"+27718693002\""));
         assertTrue(json.contains("\"message\": \"Hi Mike, can you join us for dinner tonight?\""));
     }
+    
+    // ---- Extra edge cases ----
+
+    @Test
+    public void testSentMessage_InvalidChoice() {
+        Message message = new Message(ID_1, RECIPIENT_1, MESSAGE_1);
+        assertEquals("Invalid option; please choose 1, 2 or 3.", message.SentMessage(9));
+    }
+
+    @Test
+    public void testDisregardedMessage_NotCountedAsSent() {
+        new Message(ID_2, RECIPIENT_2, MESSAGE_2).SentMessage(2);
+
+        assertEquals(0, Message.returnTotalMessages());
+        assertEquals(1, Message.getDisregardedMessages().size());
+    }
+
+    @Test
+    public void testPrintMessages_NoneSent() {
+        assertEquals("No messages have been sent.", Message.printMessages());
+    }
+
+    @Test
+    public void testMessageHash_SecondMessageUsesMessageNumber() {
+        new Message(ID_1, RECIPIENT_1, MESSAGE_1);
+        Message second = new Message(ID_2, RECIPIENT_2, MESSAGE_2);
+
+        assertEquals("12:1:HIPAYMENT", second.createMessageHash());
+    }
+
+    @Test
+    public void testMessageHash_SingleWordMessage() {
+        Message message = new Message(ID_1, RECIPIENT_1, "Hello");
+        assertEquals("00:0:HELLOHELLO", message.createMessageHash());
+    }
+
+    @Test
+    public void testStoreMessage_MultipleMessagesKeptInJson() throws IOException {
+        new Message(ID_1, RECIPIENT_1, MESSAGE_1).SentMessage(3);
+        new Message(ID_2, RECIPIENT_2, MESSAGE_2).SentMessage(3);
+
+        String json = new String(Files.readAllBytes(storageFile.toPath()), StandardCharsets.UTF_8);
+        assertEquals(2, Message.getStoredMessages().size());
+        assertTrue(json.contains("\"messageID\": \"0012345678\""));
+        assertTrue(json.contains("\"messageID\": \"1234567890\""));
+    }
+
+    @Test
+    public void testStoreMessage_QuotesAreEscaped() throws IOException {
+        new Message(ID_1, RECIPIENT_1, "Say \"hi\" now").SentMessage(3);
+
+        String json = new String(Files.readAllBytes(storageFile.toPath()), StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"message\": \"Say \\\"hi\\\" now\""));
+    }
 }
