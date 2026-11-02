@@ -2,6 +2,9 @@ package poe.partone;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -9,8 +12,10 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Message.java
  *
- * Represents one QuickChat message and keeps the running lists/totals for
- * the current program run (sent, disregarded and stored messages).
+ * Represents one QuickChat message and keeps the running arrays for the
+ * current program run: sent, disregarded and stored messages, plus every
+ * message hash and message ID. Stored messages are saved to, and read back
+ * from, a JSON file.
  *
  * @author Student
  */
@@ -24,21 +29,27 @@ public class Message {
     public static final String DISREGARDED = "Press 0 to delete the message.";
     public static final String STORED_OK = "Message successfully stored.";
     public static final String INVALID_CHOICE = "Invalid option; please choose 1, 2 or 3.";
+    public static final String NOT_FOUND = "No matching message was found.";
 
     public static final int MAX_MESSAGE_LENGTH = 250;
 
-    // ---- Running state for this program run ----
+    // ---- The arrays (all filled while the program runs, nothing hard-coded) ----
     private static final List<Message> sentMessages = new ArrayList<>();
     private static final List<Message> disregardedMessages = new ArrayList<>();
     private static final List<Message> storedMessages = new ArrayList<>();
+    private static final List<String> messageHashes = new ArrayList<>();
+    private static final List<String> messageIDs = new ArrayList<>();
+
     private static int messagesCreated = 0;
     private static String storageFile = "storedMessages.json";
+    private static String sender = "Me";
 
     // ---- Fields of a single message ----
     private final String messageID;
     private final int messageNumber;
     private final String recipient;
     private final String text;
+    private final String loadedHash; // only set for messages read back from the JSON file
 
     /** Creates a message with an auto-generated ten-digit ID. */
     public Message(String recipient, String text) {
@@ -51,6 +62,18 @@ public class Message {
         this.recipient = recipient;
         this.text = text;
         this.messageNumber = messagesCreated++;
+        this.loadedHash = null;
+        messageIDs.add(messageID);
+        messageHashes.add(createMessageHash());
+    }
+
+    /** Used only when reading a stored message back from the JSON file; keeps its saved hash. */
+    private Message(String messageID, String hash, String recipient, String text) {
+        this.messageID = messageID;
+        this.recipient = recipient;
+        this.text = text;
+        this.messageNumber = -1;
+        this.loadedHash = hash;
     }
 
     // ------------------------------------------------------------------
@@ -130,10 +153,14 @@ public class Message {
      * Builds the message hash: first two digits of the ID, the message
      * number, then the first and last word of the message, in capitals.
      * Punctuation is removed from the words, e.g. 00:0:HITONIGHT.
+     * A message read back from the JSON file keeps the hash it was saved with.
      *
      * @return the message hash
      */
     public String createMessageHash() {
+        if (loadedHash != null) {
+            return loadedHash;
+        }
         String[] words = text.trim().split("\\s+");
         String firstWord = cleanWord(words[0]);
         String lastWord = cleanWord(words[words.length - 1]);
@@ -184,6 +211,11 @@ public class Message {
      */
     public void storeMessage() {
         storedMessages.add(this);
+        saveStoredMessages();
+    }
+
+    /** Writes the whole stored-messages array to the JSON file. */
+    private static void saveStoredMessages() {
         StringBuilder json = new StringBuilder("[\n");
         for (int i = 0; i < storedMessages.size(); i++) {
             Message m = storedMessages.get(i);
@@ -197,7 +229,7 @@ public class Message {
         }
         json.append("]\n");
 
-        try (FileWriter writer = new FileWriter(storageFile)) {
+        try (FileWriter writer = new FileWriter(storageFile, StandardCharsets.UTF_8)) {
             writer.write(json.toString());
         } catch (IOException e) {
             System.out.println("Could not write " + storageFile + ": " + e.getMessage());
@@ -223,6 +255,244 @@ public class Message {
             }
         }
         return out.toString();
+    }
+
+    // ------------------------------------------------------------------
+    // Reading the stored messages back from the JSON file
+    // ------------------------------------------------------------------
+
+    /**
+     * Reads the JSON file into the stored-messages array. Any messages
+     * already in the stored array are replaced. If the file does not exist
+     * yet, the stored array is simply empty.
+     *
+     * @return how many stored messages were read
+     */
+    public static int loadStoredMessages() {
+        storedMessages.clear();
+        if (!Files.exists(Paths.get(storageFile))) {
+            return 0;
+        }
+        try {
+            String json = new String(Files.readAllBytes(Paths.get(storageFile)), StandardCharsets.UTF_8);
+            JsonReader reader = new JsonReader(json);
+            reader.expect('[');
+            reader.skipWhitespace();
+            while (reader.peek() != ']') {
+                reader.expect('{');
+                String id = "";
+                String hash = "";
+                String recipient = "";
+                String text = "";
+                reader.skipWhitespace();
+                while (reader.peek() != '}') {
+                    String key = reader.readString();
+                    reader.expect(':');
+                    String value = reader.readString();
+                    switch (key) {
+                        case "messageID":   id = value; break;
+                        case "messageHash": hash = value; break;
+                        case "recipient":   recipient = value; break;
+                        case "message":     text = value; break;
+                        default: break; // ignore keys we do not know
+                    }
+                    reader.skipWhitespace();
+                    if (reader.peek() == ',') {
+                        reader.expect(',');
+                        reader.skipWhitespace();
+                    }
+                }
+                reader.expect('}');
+                Message loaded = new Message(id, hash, recipient, text);
+                storedMessages.add(loaded);
+                if (!messageIDs.contains(id)) {
+                    messageIDs.add(id);
+                }
+                if (!messageHashes.contains(hash)) {
+                    messageHashes.add(hash);
+                }
+                reader.skipWhitespace();
+                if (reader.peek() == ',') {
+                    reader.expect(',');
+                    reader.skipWhitespace();
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            System.out.println("Could not read " + storageFile + ": " + e.getMessage());
+        }
+        return storedMessages.size();
+    }
+
+    /** A very small reader for the JSON layout this program writes (an array of flat string objects). */
+    private static class JsonReader {
+        private final String s;
+        private int i = 0;
+
+        JsonReader(String s) {
+            this.s = s;
+        }
+
+        void skipWhitespace() {
+            while (i < s.length() && Character.isWhitespace(s.charAt(i))) {
+                i++;
+            }
+        }
+
+        char peek() {
+            skipWhitespace();
+            if (i >= s.length()) {
+                throw new IllegalStateException("unexpected end of file");
+            }
+            return s.charAt(i);
+        }
+
+        void expect(char c) {
+            if (peek() != c) {
+                throw new IllegalStateException("expected '" + c + "' but found '" + s.charAt(i) + "'");
+            }
+            i++;
+        }
+
+        String readString() {
+            expect('"');
+            StringBuilder out = new StringBuilder();
+            while (true) {
+                if (i >= s.length()) {
+                    throw new IllegalStateException("unterminated string");
+                }
+                char c = s.charAt(i++);
+                if (c == '"') {
+                    return out.toString();
+                }
+                if (c != '\\') {
+                    out.append(c);
+                    continue;
+                }
+                char e = s.charAt(i++);
+                switch (e) {
+                    case 'n': out.append('\n'); break;
+                    case 'r': out.append('\r'); break;
+                    case 't': out.append('\t'); break;
+                    case 'b': out.append('\b'); break;
+                    case 'f': out.append('\f'); break;
+                    case 'u':
+                        out.append((char) Integer.parseInt(s.substring(i, i + 4), 16));
+                        i += 4;
+                        break;
+                    default: out.append(e); // covers \" \\ and \/
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Part 3: working with the stored messages
+    // ------------------------------------------------------------------
+
+    /**
+     * @return the sender and recipient of every stored message, one per line
+     */
+    public static String displaySendersAndRecipients() {
+        if (storedMessages.isEmpty()) {
+            return "There are no stored messages.";
+        }
+        StringBuilder out = new StringBuilder();
+        for (Message m : storedMessages) {
+            if (out.length() > 0) {
+                out.append("\n");
+            }
+            out.append("Sender: ").append(sender).append(" | Recipient: ").append(m.recipient);
+        }
+        return out.toString();
+    }
+
+    /**
+     * Finds the longest stored message.
+     *
+     * @return the text of the longest stored message, or a notice if none are stored
+     */
+    public static String longestStoredMessage() {
+        Message longest = null;
+        for (Message m : storedMessages) {
+            if (longest == null || m.text.length() > longest.text.length()) {
+                longest = m;
+            }
+        }
+        return longest == null ? "There are no stored messages." : longest.text;
+    }
+
+    /**
+     * Searches the sent and stored messages for a message ID.
+     *
+     * @param id the message ID to look for
+     * @return the recipient and message, or a not-found notice
+     */
+    public static String searchByMessageID(String id) {
+        for (Message m : allSentAndStored()) {
+            if (m.messageID.equals(id)) {
+                return "Recipient: " + m.recipient + " | Message: " + m.text;
+            }
+        }
+        return NOT_FOUND;
+    }
+
+    /**
+     * Searches the sent and stored messages for every message to one recipient.
+     *
+     * @param recipient the recipient cell number
+     * @return the matching message texts, in the order they were found
+     */
+    public static List<String> searchByRecipient(String recipient) {
+        List<String> found = new ArrayList<>();
+        for (Message m : allSentAndStored()) {
+            if (m.recipient.equals(recipient)) {
+                found.add(m.text);
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Deletes a stored message using its message hash, then rewrites the JSON file.
+     *
+     * @param hash the message hash
+     * @return a confirmation with the deleted message, or a not-found notice
+     */
+    public static String deleteByMessageHash(String hash) {
+        for (int i = 0; i < storedMessages.size(); i++) {
+            Message m = storedMessages.get(i);
+            if (m.createMessageHash().equals(hash)) {
+                storedMessages.remove(i);
+                messageHashes.remove(hash);
+                messageIDs.remove(m.messageID);
+                saveStoredMessages();
+                return "Message: \"" + m.text + "\" successfully deleted.";
+            }
+        }
+        return NOT_FOUND;
+    }
+
+    /**
+     * @return the full details of every stored message
+     */
+    public static String storedMessagesReport() {
+        if (storedMessages.isEmpty()) {
+            return "There are no stored messages.";
+        }
+        StringBuilder report = new StringBuilder();
+        for (Message m : storedMessages) {
+            if (report.length() > 0) {
+                report.append("\n\n");
+            }
+            report.append(m.getDetails());
+        }
+        return report.toString();
+    }
+
+    private static List<Message> allSentAndStored() {
+        List<Message> all = new ArrayList<>(sentMessages);
+        all.addAll(storedMessages);
+        return all;
     }
 
     // ------------------------------------------------------------------
@@ -271,6 +541,14 @@ public class Message {
         return messageID;
     }
 
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public String getText() {
+        return text;
+    }
+
     public static List<Message> getSentMessages() {
         return new ArrayList<>(sentMessages);
     }
@@ -283,16 +561,31 @@ public class Message {
         return new ArrayList<>(storedMessages);
     }
 
+    public static List<String> getMessageHashes() {
+        return new ArrayList<>(messageHashes);
+    }
+
+    public static List<String> getMessageIDs() {
+        return new ArrayList<>(messageIDs);
+    }
+
+    /** Sets the name shown as the sender of stored messages. */
+    public static void setSender(String name) {
+        sender = name;
+    }
+
     /** Changes where stored messages are written (the tests use a temp file). */
     public static void setStorageFile(String path) {
         storageFile = path;
     }
 
-    /** Clears all lists and counters; the unit tests call this before every test. */
+    /** Clears all arrays and counters; the unit tests call this before every test. */
     public static void resetAll() {
         sentMessages.clear();
         disregardedMessages.clear();
         storedMessages.clear();
+        messageHashes.clear();
+        messageIDs.clear();
         messagesCreated = 0;
     }
 }
