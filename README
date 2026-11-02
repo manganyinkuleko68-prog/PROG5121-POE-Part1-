@@ -20,17 +20,21 @@ with input validation, built for the PROG5121 Portfolio of Evidence.
   `checkCellPhoneNumber`, `registerUser`, `loginUser`,
   `returnLoginStatus`).
 - `PoePartOne.java` — console entry point that collects user input via
-  `Scanner` and drives registration and login.
+  `Scanner` and drives registration, login and the QuickChat menus.
+- `Message.java` — one QuickChat message, the message arrays, and the JSON
+  storage (added in Parts 2 and 3).
 - `LoginTest.java` — JUnit test suite covering all validation and
   messaging logic using the exact test data supplied in the brief.
+- `MessageTest.java` and `StoredMessagesTest.java` — JUnit tests for Parts 2
+  and 3.
 
 ## How to run
 1. Open the project in NetBeans.
 2. Run `PoePartOne.java` to start the console application.
-3. Run `LoginTest.java` (Test File) to execute the JUnit test suite.
+3. Run the tests (Alt+F6) to execute the whole JUnit test suite.
 
 ## Testing
-All 13 unit tests pass, covering:
+All 13 Part 1 unit tests pass, covering:
 - Username format (valid/invalid)
 - Password complexity (valid/invalid)
 - Cell number format (valid/invalid)
@@ -48,8 +52,9 @@ All 13 unit tests pass, covering:
 After logging in, the user gets a QuickChat menu:
 
 1. **Send Messages** – enter a recipient and message, then choose to send, disregard or store it.
-2. **Show recently sent messages** – Coming Soon.
+2. **Show recently sent messages** – prints the details of every message sent in this run.
 3. **Quit**
+4. **Stored Messages** – see Part 3 below.
 
 ### Message rules
 - Recipient: international format `+27` followed by 9 digits.
@@ -58,8 +63,24 @@ After logging in, the user gets a QuickChat menu:
 - Message hash: first two ID digits, message number, then first and last word, in capitals (e.g. `00:0:HITONIGHT`).
 - Stored messages are written to `storedMessages.json`.
 
-### Tests and CI
-- `MessageTest` has 15 JUnit 4 tests built from the brief's test data.
-- GitHub Actions (`.github/workflows/ci.yml`) compiles the project and runs `LoginTest` and `MessageTest` on every push.
+## Part 3: Stored Messages
 
-![Java CI](https://github.com/manganyinkuleko68-prog/PROG5121-POE-Part1-/actions/workflows/ci.yml/badge.svg?branch=part2-quickchat)
+QuickChat now keeps arrays for sent, disregarded and stored messages, plus every
+message hash and message ID. Stored messages are saved to `storedMessages.json` and
+read back into the stored array each time the program starts.
+
+The **Stored Messages** menu lets the user:
+- display the sender and recipient of all stored messages
+- display the longest stored message
+- search for a message ID and show its recipient and message
+- search for all messages to a particular recipient
+- delete a message using its message hash (the JSON file is updated)
+- display a report of all stored messages
+
+### Tests and CI
+- `LoginTest` has 13 tests, `MessageTest` has 22 tests and `StoredMessagesTest`
+  has 20 tests (JUnit 4), using the brief's test data.
+- GitHub Actions (`.github/workflows/ci.yml`) compiles the project and runs all three
+  test classes on every push and pull request.
+
+![Java CI](https://github.com/manganyinkuleko68-prog/PROG5121-POE-Part1-/actions/workflows/ci.yml/badge.svg?branch=master)
