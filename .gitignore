@@ -4,6 +4,7 @@ nbproject/private/
 *.class
 *.log
 .netbeans_automatic_build
+storedMessages.json
 
 
  

@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -31,4 +32,4 @@ jobs:
           javac -d out -cp "lib/*" $(find src test -name "*.java")
 
       - name: Run unit tests
-        run: java -cp "out:lib/*" org.junit.runner.JUnitCore poe.partone.LoginTest poe.partone.MessageTest
+        run: java -cp "out:lib/*" org.junit.runner.JUnitCore poe.partone.LoginTest poe.partone.MessageTest poe.partone.StoredMessagesTest
