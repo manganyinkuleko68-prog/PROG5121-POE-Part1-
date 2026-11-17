@@ -7,10 +7,14 @@ import java.util.Scanner;
  *
  * Console entry point. Part 1: register and log in. Part 2: once logged in,
  * the QuickChat menu lets the user send, disregard or store messages.
+ * Part 3: the Stored Messages menu works with the stored messages array.
  *
  * @author Student
  */
 public class PoePartOne {
+
+    /** The registered user's name; shown as the sender of stored messages. */
+    private static String senderName = "Me";
 
     /**
      * Runs registration, login and then the QuickChat menu.
@@ -38,6 +42,7 @@ public class PoePartOne {
         String username = promptFor(scanner, "Please enter the username:");
         String password = promptFor(scanner, "Enter password:");
         String cellNumber = promptFor(scanner, "Enter cell phone number:");
+        senderName = firstName.trim() + " " + lastName.trim();
 
         System.out.println(login.registerUser(username, password, cellNumber, firstName, lastName));
         if (!login.isRegistered()) {
@@ -62,6 +67,11 @@ public class PoePartOne {
 
     private static void runQuickChat(Scanner scanner) {
         System.out.println("\nWelcome to QuickChat.");
+        Message.setSender(senderName);
+        int loaded = Message.loadStoredMessages();
+        if (loaded > 0) {
+            System.out.println(loaded + " stored message(s) loaded from the JSON file.");
+        }
 
         int limit = promptForInt(scanner, "How many messages do you wish to enter?", 1, Integer.MAX_VALUE);
         int entered = 0;
@@ -71,7 +81,8 @@ public class PoePartOne {
             System.out.println("\n1) Send Messages");
             System.out.println("2) Show recently sent messages");
             System.out.println("3) Quit");
-            int choice = promptForInt(scanner, "Choose an option:", 1, 3);
+            System.out.println("4) Stored Messages");
+            int choice = promptForInt(scanner, "Choose an option:", 1, 4);
 
             switch (choice) {
                 case 1:
@@ -82,7 +93,10 @@ public class PoePartOne {
                     }
                     break;
                 case 2:
-                    System.out.println("Coming Soon.");
+                    System.out.println(Message.printMessages());
+                    break;
+                case 4:
+                    storedMessagesMenu(scanner);
                     break;
                 default:
                     running = false;
@@ -90,6 +104,59 @@ public class PoePartOne {
             }
         }
         System.out.println("Goodbye.");
+    }
+
+    // ------------------------------------------------------------------
+    // Part 3: Stored Messages
+    // ------------------------------------------------------------------
+
+    private static void storedMessagesMenu(Scanner scanner) {
+        boolean back = false;
+        while (!back) {
+            System.out.println("\n--- Stored Messages ---");
+            System.out.println("1) Display the sender and recipient of all stored messages");
+            System.out.println("2) Display the longest stored message");
+            System.out.println("3) Search for a message ID");
+            System.out.println("4) Search for all messages to a recipient");
+            System.out.println("5) Delete a message using the message hash");
+            System.out.println("6) Display a report of all stored messages");
+            System.out.println("7) Back to the main menu");
+            int choice = promptForInt(scanner, "Choose an option:", 1, 7);
+
+            switch (choice) {
+                case 1:
+                    System.out.println(Message.displaySendersAndRecipients());
+                    break;
+                case 2:
+                    System.out.println(Message.longestStoredMessage());
+                    break;
+                case 3:
+                    String id = promptFor(scanner, "Enter the message ID:");
+                    System.out.println(Message.searchByMessageID(id.trim()));
+                    break;
+                case 4:
+                    String recipient = promptFor(scanner, "Enter the recipient cell number:");
+                    java.util.List<String> found = Message.searchByRecipient(recipient.trim());
+                    if (found.isEmpty()) {
+                        System.out.println(Message.NOT_FOUND);
+                    } else {
+                        for (String text : found) {
+                            System.out.println("\"" + text + "\"");
+                        }
+                    }
+                    break;
+                case 5:
+                    String hash = promptFor(scanner, "Enter the message hash:");
+                    System.out.println(Message.deleteByMessageHash(hash.trim().toUpperCase()));
+                    break;
+                case 6:
+                    System.out.println(Message.storedMessagesReport());
+                    break;
+                default:
+                    back = true;
+                    break;
+            }
+        }
     }
 
     /** Collects messages until the limit is reached; returns how many have been entered so far. */
